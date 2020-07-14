@@ -15,15 +15,162 @@
 <script type="text/javascript" src="js/d3/d3.v4.min.js" charset="utf-8"></script>
 <script type="text/javascript" src="js/d3/d3-tip.min.js"></script>
 <script type="text/javascript" src="js/d3/d3-flamegraph.min.js"></script>
+
+<style type="text/css">
+	h3 {
+		margin-top:40px;
+	}
+</style>
 <title>Thread Analysis Tool</title>
 </head>
 <body>
-	<h1>Thread Analysis Tool</h1>
+	<div class="container">
+		<h1>Thread Analysis Tool</h1>
+		<hr>
+		<form action="upload" method="post" enctype="multipart/form-data">
+			<input type="file" name="file">
+			<button>Upload</button>
+		</form>
 
-	<form action="upload" method="post" enctype="multipart/form-data">
-		<input type="file" name="file">
-		<button>Upload</button>
-	</form>
+		<hr>
+
+		<!-- basic info -->
+		<div class="row">
+			<div class="col-2" id="dumpId"></div>
+			<div class="col-3" id="generateTime"></div>
+			<div class="col-5" id="jdkInfo"></div>
+			<div class="col-2" id="threadCount"></div>
+		</div>
+
+		<!-- header part -->
+		<div id="reportHeader">
+			<!-- some diagnostic info here -->
+		</div>
+
+		<!-- daemon pie chart -->
+		<div id="daemonOrNot">
+			<h3>Daemon vs Non-Daemon</h3>
+			<hr>
+			<div id="daemonOrNotChart"
+				style="width: 500px; height: 300px; margin: 0 auto;"></div>
+		</div>
+		
+		<!-- CPU time -->
+		<div id="cpuUsage">
+			<h3>CPU Usage Per Thread</h3>
+			<table class="table">
+				<thead>
+					<tr>
+						<th>Thread Name</th>
+						<th>Time Used</th>
+					</tr>
+				</thead>
+
+				<tbody id="cpuUsageTabBody">
+
+				</tbody>
+			</table>
+		</div>
+	</div>
+
+	<script type="text/javascript">
+function getUrlVars() {
+    var vars = {};
+    var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+        vars[key] = value;
+    });
+    return vars;
+}
+
+function showDaemonOrNot(daemonMap) {
+	let legendData = [];
+	let seriesData = [];
+	for (let [key, value] of Object.entries(daemonMap)) {
+		legendData.push(key);
+		seriesData.push({name:key, value:value});
+	}
+	
+	option = {
+		    title: {
+		        text: 'Daemon vs Non-daemon',
+		        subtext: '',
+		        left: 'center'
+		    },
+		    tooltip: {
+		        trigger: 'item',
+		        formatter: '{a} <br/>{b} : {c} ({d}%)'
+		    },
+		    legend: {
+		        // orient: 'vertical',
+		        // top: 'middle',
+		        bottom: 10,
+		        left: 'center',
+		        data: legendData
+		    },
+		    series: [
+		        {
+		            type: 'pie',
+		            radius: '55%',
+		            center: ['50%', '50%'],
+		            selectedMode: 'single',
+		            data: seriesData,
+		            emphasis: {
+		                itemStyle: {
+		                    shadowBlur: 10,
+		                    shadowOffsetX: 0,
+		                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+		                }
+		            }
+		        }
+		    ]
+		};
+	var myChart = echarts.init(document.getElementById("daemonOrNotChart"));
+    myChart.setOption(option);
+}
+
+function fetchReport(id) {
+	$("#reportHeader").html("<div style='width:100%; text-align:center;'><img src='/img/loading.gif' alt='loading ...' style='width:100px;'></div>");
+	
+	let uri = "/report/" + id;
+	$.get(uri, function(rsps){
+		if (!rsps) {
+			$("#reportHeader").html("Can not find the report!");
+			return;
+		}
+		//TODO if rsps is as expected, what should we do?
+		console.log(rsps);
+		
+		//basic info
+		$("#dumpId").text("Dump id: " + rsps.dumpId);
+		$("#generateTime").text(rsps.generateTime);
+		$("#jdkInfo").text(rsps.jdkInfo);
+		$("#threadCount").text("threads: " + rsps.threadCount);
+		
+		// thread cpu usage
+		let cpuUsageTabBodyHtml = "";
+		for (const [key, value] of Object.entries(rsps.threadElapsedMap)) {
+			  console.log(`${key}: ${value}`);
+			  cpuUsageTabBodyHtml += `<tr><td>${key}</td><td>${value}</td></tr>`;
+		}
+		$("#cpuUsageTabBody").html(cpuUsageTabBodyHtml);
+		
+		//daemon pie chart
+		showDaemonOrNot(rsps.daemonCountMap);
+		
+		//TODO diagnostic info here
+		$("#reportHeader").html("");
+	});
+}
+
+$( document ).ready(function(){
+	let id = getUrlVars()["id"];
+	if (!id) {
+		return;
+	}
+	
+	fetchReport(id);
+});
+</script>
 </body>
 
 </html>
