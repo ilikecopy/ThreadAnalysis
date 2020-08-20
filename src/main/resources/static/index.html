@@ -21,7 +21,7 @@
 		margin-top:40px;
 	}
 </style>
-<title>Thread Analysis Tool</title>
+<title>Java Thread Analysis Tool</title>
 </head>
 <body>
 	<div class="container">
@@ -47,6 +47,13 @@
 			<!-- some diagnostic info here -->
 		</div>
 
+		<!-- by state -->
+		<div id="byState">
+				<h3>Group by State</h3>
+				<hr>
+				<div id="byStateChart" style="width: 500px; height: 300px; margin: 0 auto;"></div>
+			</div>
+			
 		<!-- daemon pie chart -->
 		<div id="daemonOrNot">
 			<h3>Daemon vs Non-Daemon</h3>
@@ -54,6 +61,29 @@
 			<div id="daemonOrNotChart"
 				style="width: 500px; height: 300px; margin: 0 auto;"></div>
 		</div>
+		
+		<div id="flameGraph">
+				<h3>Flame Graph</h3>
+				<hr>
+				<div class="row">
+					<div class="col-4"></div>
+					<div class="col-2">
+						<button type="button" id="flameResetBtn" class="btn btn-secondary btn-sm">Reset zoom</button>
+					</div>
+					<div class="col-1">
+						<button type="button" id="flameClearBtn" class="btn btn-outline-success btn-sm">Clear</button>
+					</div>
+					<div class="col-5">
+						<form class="form-inline">
+							<input type="text" class="form-control form-control-sm" id="flameSearchTxt">
+							<button type="button" class="btn btn-primary btn-sm" id="flameSearchBtn">Search</button>
+						</form>
+					</div>
+				</div>
+				<div id="flameChart"></div>
+				<hr>
+				<div id="flameDetails"></div>
+			</div>
 		
 		<!-- CPU time -->
 		<div id="cpuUsage">
@@ -80,6 +110,53 @@ function getUrlVars() {
         vars[key] = value;
     });
     return vars;
+}
+
+function showByState(groupByState) {
+	let legendData = [];
+	let seriesData = [];
+	for (let [key, value] of Object.entries(groupByState)) {
+		  legendData.push(key);
+		  seriesData.push({name:key, value:value});
+	}
+	
+	option = {
+		    title: {
+		        text: 'Group by State',
+		        subtext: '',
+		        left: 'center'
+		    },
+		    tooltip: {
+		        trigger: 'item',
+		        formatter: '{a} <br/>{b} : {c} ({d}%)'
+		    },
+		    legend: {
+		        // orient: 'vertical',
+		        // top: 'middle',
+		        bottom: 10,
+		        left: 'center',
+		        data: legendData
+		    },
+		    series: [
+		        {
+		            type: 'pie',
+		            radius: '55%',
+		            center: ['50%', '50%'],
+		            selectedMode: 'single',
+		            data: seriesData,
+		            emphasis: {
+		                itemStyle: {
+		                    shadowBlur: 10,
+		                    shadowOffsetX: 0,
+		                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+		                }
+		            }
+		        }
+		    ]
+		};
+	var myChart = echarts.init(document.getElementById("byStateChart"));
+
+    myChart.setOption(option);
 }
 
 function showDaemonOrNot(daemonMap) {
@@ -128,6 +205,47 @@ function showDaemonOrNot(daemonMap) {
     myChart.setOption(option);
 }
 
+//show flamechart start
+function showFlame(flameData) {
+	var flameGraph = d3.flamegraph()
+    .width(840)
+    .cellHeight(12)
+    .transitionDuration(750)
+    .minFrameSize(5)
+    .transitionEase(d3.easeCubic)
+    .sort(true)
+    //Example to sort in reverse order
+    //.sort(function(a,b){ return d3.descending(a.name, b.name);})
+    .title("callstack")
+    .onClick(onClick)
+    .differential(false)
+    .selfValue(false);
+
+  var details = document.getElementById("flameDetails");
+  flameGraph.setDetailsElement(details);
+
+    d3.select("#flameGraph")
+        .datum(flameData)
+        .call(flameGraph);
+
+  $("#flameResetBtn").click(function(){
+	  flameGraph.resetZoom();
+  });
+  
+  $("#flameSearchBtn").click(function(){
+	  let term = $("#flameSearchTxt").val();
+	  flameGraph.search(term);
+  });
+  $("#flameClearBtn").click(function(){
+	  $("#flameSearchTxt").val("");
+	  flameGraph.clear();
+  });
+
+  function onClick(d) {
+    console.info("Clicked on " + d.data.name);
+  }
+}
+
 function fetchReport(id) {
 	$("#reportHeader").html("<div style='width:100%; text-align:center;'><img src='/img/loading.gif' alt='loading ...' style='width:100px;'></div>");
 	
@@ -156,6 +274,11 @@ function fetchReport(id) {
 		
 		//daemon pie chart
 		showDaemonOrNot(rsps.daemonCountMap);
+		
+		//by state with pie chart
+		showByState(rsps.stateCountMap);
+		
+		showFlame(rsps.flameData);
 		
 		//TODO diagnostic info here
 		$("#reportHeader").html("");

@@ -2,6 +2,8 @@ package com.yiqin.tool.thread.analysis.model;
 
 import java.util.Map;
 
+import com.yiqin.tool.thread.analysis.service.impl.ReportServiceImpl.Method;
+
 public class Report {
 	private Long dumpId;
 	private String generateTime;
@@ -10,6 +12,8 @@ public class Report {
 	
 	private Map<String, String> threadElapsedMap;
 	private Map<String, Integer> daemonCountMap;
+	private Map<String, Integer> stateCountMap;
+	private Method flameData;
 	
 	public Long getDumpId() {
 		return dumpId;
@@ -47,6 +51,17 @@ public class Report {
 	public void setDaemonCountMap(Map<String, Integer> daemonCountMap) {
 		this.daemonCountMap = daemonCountMap;
 	}
-	
+	public Map<String, Integer> getStateCountMap() {
+		return stateCountMap;
+	}
+	public void setStateCountMap(Map<String, Integer> stateCountMap) {
+		this.stateCountMap = stateCountMap;
+	}
+	public Method getFlameData() {
+		return flameData;
+	}
+	public void setFlameData(Method flameData) {
+		this.flameData = flameData;
+	}
 	
 }
