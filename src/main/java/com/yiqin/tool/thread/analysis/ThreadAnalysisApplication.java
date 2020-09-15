@@ -9,5 +9,4 @@ public class ThreadAnalysisApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ThreadAnalysisApplication.class, args);
 	}
-
 }

@@ -104,6 +104,7 @@
 	</div>
 
 	<script type="text/javascript">
+	
 function getUrlVars() {
     var vars = {};
     var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
@@ -162,9 +163,9 @@ function showByState(groupByState) {
 function showDaemonOrNot(daemonMap) {
 	let legendData = [];
 	let seriesData = [];
-	for (let [key, value] of Object.entries(daemonMap)) {
+	for (let [key, v] of Object.entries(daemonMap)) {
 		legendData.push(key);
-		seriesData.push({name:key, value:value});
+		seriesData.push({name:key, value:v});
 	}
 	
 	option = {
